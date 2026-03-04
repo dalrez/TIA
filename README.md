@@ -42,6 +42,11 @@ python sp500_yahoo_agent.py --tickers AAPL,MSFT,NVDA --top 10
 - Crecimiento de ingresos mínimo (`min_revenue_growth`)
 - Volumen medio mínimo 3 meses (`min_avg_volume_3m`)
 - Precio por encima de SMA50 (`require_price_above_sma50`)
+- Precio por debajo de SMA200 (`require_price_below_sma200`)
+
+## Nota técnica
+
+Para calcular SMA200, el agente solicita hasta 1 año de velas diarias en Yahoo Finance.
 
 ## Nota
 

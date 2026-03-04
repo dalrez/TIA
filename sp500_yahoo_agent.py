@@ -15,7 +15,7 @@ from typing import Any
 
 SP500_CSV_URL = "https://datahub.io/core/s-and-p-500-companies/r/constituents.csv"
 YAHOO_QUOTE_SUMMARY_URL = "https://query2.finance.yahoo.com/v10/finance/quoteSummary/{ticker}?modules=price,summaryDetail,defaultKeyStatistics,financialData"
-YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=3mo"
+YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=1y"
 
 
 @dataclass
@@ -28,6 +28,7 @@ class MetricThresholds:
     min_revenue_growth: float = 0.05
     min_avg_volume_3m: float = 1_000_000
     require_price_above_sma50: bool = True
+    require_price_below_sma200: bool = False
 
 
 @dataclass
@@ -45,6 +46,7 @@ class StockEvaluation:
     revenue_growth: float | None
     avg_volume_3m: float | None
     sma50: float | None
+    sma200: float | None
 
 
 def http_get_json(url: str, timeout: int = 20) -> dict[str, Any]:
@@ -132,11 +134,13 @@ def get_technical_metrics(ticker: str) -> dict[str, float | None]:
 
     avg_volume_3m = statistics.mean(volume[-60:]) if volume else None
     sma50 = statistics.mean(close[-50:]) if close else None
+    sma200 = statistics.mean(close[-200:]) if len(close) >= 200 else None
     price_from_close = close[-1] if close else None
 
     return {
         "avg_volume_3m": avg_volume_3m,
         "sma50": sma50,
+        "sma200": sma200,
         "price_from_close": price_from_close,
     }
 
@@ -154,6 +158,7 @@ def evaluate_stock(ticker: str, company: str, thresholds: MetricThresholds) -> S
     revenue_growth = quote["revenue_growth"]
     avg_volume_3m = technical["avg_volume_3m"]
     sma50 = technical["sma50"]
+    sma200 = technical["sma200"]
 
     checks = [
         market_cap is not None and market_cap >= thresholds.min_market_cap,
@@ -166,6 +171,10 @@ def evaluate_stock(ticker: str, company: str, thresholds: MetricThresholds) -> S
         (
             not thresholds.require_price_above_sma50
             or (price is not None and sma50 is not None and price > sma50)
+        ),
+        (
+            not thresholds.require_price_below_sma200
+            or (price is not None and sma200 is not None and price < sma200)
         ),
     ]
 
@@ -183,6 +192,7 @@ def evaluate_stock(ticker: str, company: str, thresholds: MetricThresholds) -> S
         revenue_growth=revenue_growth,
         avg_volume_3m=avg_volume_3m,
         sma50=sma50,
+        sma200=sma200,
     )
 
 
@@ -244,7 +254,7 @@ def main() -> None:
     print("\n=== Top acciones por score ===")
     for row in results[: args.top]:
         print(
-            f"{row.ticker:6} | score={row.score}/8 | passed={row.passed} | "
+            f"{row.ticker:6} | score={row.score}/9 | passed={row.passed} | "
             f"price={row.price} | PE={row.forward_pe} | ROE={row.roe}"
         )
 

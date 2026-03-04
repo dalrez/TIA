@@ -6,5 +6,6 @@
   "max_debt_to_equity": 120,
   "min_revenue_growth": 0.08,
   "min_avg_volume_3m": 1500000,
-  "require_price_above_sma50": true
+  "require_price_above_sma50": true,
+  "require_price_below_sma200": true
 }
